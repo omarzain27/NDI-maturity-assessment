@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NDI Data Maturity Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Sora:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #1a4fa0;
+    --primary-light: #e8eef8;
+    --accent: #0e8c6a;
+    --accent-light: #e3f5f0;
+    --text: #1a1a1a;
+    --text-muted: #6b7280;
+    --surface: #ffffff;
+    --surface2: #f9fafb;
+    --border: rgba(0,0,0,0.1);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-en: 'Sora', sans-serif;
+    --font-ar: 'Tajawal', sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --text: #f1f1f1;
+      --text-muted: #9ca3af;
+      --surface: #1f2937;
+      --surface2: #111827;
+      --border: rgba(255,255,255,0.1);
+      --primary-light: #1e3a6e;
+    }
+  }
+
+  body {
+    font-family: var(--font-en);
+    background: var(--surface2);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+  }
+
+  .top-bar {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .brand {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    letter-spacing: 0.04em;
+  }
+
+  .lang-toggle { display: flex; gap: 6px; }
+  .lang-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .lang-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 680px;
+    padding: 32px;
+  }
+
+  /* INTRO */
+  .intro-inner { text-align: center; }
+  .intro-badge {
+    display: inline-block;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .intro-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .intro-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 480px;
+    margin: 0 auto 28px;
+  }
+  .domains-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 32px;
+    text-align: left;
+  }
+  .domain-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .domain-chip strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .start-btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: 14px 40px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.2s;
+  }
+  .start-btn:hover { opacity: 0.88; }
+
+  /* PROGRESS */
+  .progress-bar-wrap { margin-bottom: 24px; }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .progress-track {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  .section-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: 3px 10px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+
+  .question-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 20px;
+    animation: fadeSlide 0.3s ease;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-number { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+  .q-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  .options-list { display: flex; flex-direction: column; gap: 8px; }
+  .option-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s;
+    font-family: inherit;
+    width: 100%;
+  }
+  .option-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+  .option-btn.selected { border-color: var(--primary); background: var(--primary-light); }
+  .option-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s;
+  }
+  .option-btn.selected .option-dot { border-color: var(--primary); background: var(--primary); }
+  .option-btn.selected .option-dot::after {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .option-score { font-size: 10px; color: var(--text-muted); font-weight: 500; margin-top: 2px; display: block; }
+  .option-label { font-size: 14px; color: var(--text); line-height: 1.4; }
+
+  .nav-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 4px; }
+  .nav-btn {
+    padding: 10px 22px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text);
+    transition: all 0.18s;
+  }
+  .nav-btn:hover { background: var(--surface2); }
+  .nav-btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .nav-btn.primary:hover { opacity: 0.88; }
+  .nav-btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* RESULTS */
+  .results-header { text-align: center; margin-bottom: 28px; }
+  .maturity-badge {
+    display: inline-block;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .results-score-big { font-size: 52px; font-weight: 600; line-height: 1; margin-bottom: 6px; }
+  .results-title { font-size: 18px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  .results-sub { font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 440px; margin: 0 auto; }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .metric-card { background: var(--surface2); border-radius: var(--radius-md); padding: 14px 12px; text-align: center; border: 1px solid var(--border); }
+  .metric-val { font-size: 22px; font-weight: 500; color: var(--text); }
+  .metric-lbl { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .chart-title { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 16px; }
+
+  .domain-bars { display: flex; flex-direction: column; gap: 10px; }
+  .domain-bar-row { display: flex; align-items: center; gap: 10px; }
+  .domain-bar-label { font-size: 12px; color: var(--text-muted); min-width: 120px; text-align: right; }
+  .domain-bar-track { flex: 1; height: 10px; background: var(--surface2); border-radius: 6px; overflow: hidden; }
+  .domain-bar-fill { height: 100%; border-radius: 6px; transition: width 1s ease; }
+  .domain-bar-pct { font-size: 12px; font-weight: 500; color: var(--text); min-width: 34px; }
+
+  .recommendations {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .rec-title { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 14px; }
+  .rec-item { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start; }
+  .rec-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500;
+    margin-top: 1px;
+  }
+  .rec-icon.high { background: #fee2e2; color: #991b1b; }
+  .rec-icon.med  { background: #fef3c7; color: #92400e; }
+  .rec-icon.low  { background: #d1fae5; color: #065f46; }
+  .rec-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+  .cta-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .cta-btn {
+    flex: 1; min-width: 140px;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+    text-align: center; transition: all 0.18s;
+  }
+  .cta-primary { background: var(--primary); border: none; color: #fff; }
+  .cta-primary:hover { opacity: 0.88; }
+  .cta-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .cta-secondary:hover { background: var(--surface2); }
+
+  /* RTL */
+  .rtl { direction: rtl; font-family: var(--font-ar) !important; }
+  .rtl body { font-family: var(--font-ar); }
+  .rtl .domain-bar-label { text-align: left; }
+  .rtl .option-btn { text-align: right; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 500px) {
+    .card { padding: 20px 16px; }
+    .intro-title { font-size: 18px; }
+    .results-score-big { font-size: 40px; }
+    .domain-bar-label { min-width: 80px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="brand">NDI Maturity Assessment</span>
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('en')">English</button>
+    <button class="lang-btn" onclick="setLang('ar')">العربية</button>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div class="card" id="screen-intro">
+  <div class="intro-inner">
+    <div class="intro-badge" id="intro-badge">NDI Data Maturity Assessment</div>
+    <h1 class="intro-title" id="intro-title">How mature is your organization's data governance?</h1>
+    <p class="intro-sub" id="intro-sub">This assessment evaluates your organization across 8 key data management domains aligned with SDAIA's National Data Index framework. Takes approximately 8–10 minutes.</p>
+    <div class="domains-grid" id="domains-grid"></div>
+    <button class="start-btn" id="start-btn" onclick="startSurvey()">Begin Assessment</button>
+  </div>
+</div>
+
+<!-- SURVEY -->
+<div class="card hidden" id="screen-survey">
+  <div class="progress-bar-wrap">
+    <div class="progress-meta">
+      <span id="prog-section"></span>
+      <span id="prog-count"></span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+    </div>
+  </div>
+  <div id="question-area"></div>
+  <div class="nav-row">
+    <button class="nav-btn" id="btn-back" onclick="goBack()">← Back</button>
+    <button class="nav-btn primary" id="btn-next" onclick="goNext()" disabled>Next →</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="card hidden" id="screen-results">
+  <div class="results-header">
+    <div class="maturity-badge" id="res-badge"></div>
+    <div class="results-score-big" id="res-score"></div>
+    <div class="results-title" id="res-title"></div>
+    <p class="results-sub" id="res-sub"></p>
+  </div>
+  <div class="metrics-grid" id="metrics-grid"></div>
+  <div class="chart-card">
+    <div class="chart-title" id="radar-title">Domain scores</div>
+    <div style="position:relative;width:100%;height:300px;">
+      <canvas id="radarChart" role="img" aria-label="Radar chart showing scores across 8 data governance domains"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title" id="bar-title">Score by domain</div>
+    <div class="domain-bars" id="domain-bars"></div>
+  </div>
+  <div class="recommendations" id="rec-section"></div>
+  <div class="cta-row">
+    <button class="cta-btn cta-secondary" id="cta-restart" onclick="restartSurvey()">Retake assessment</button>
+    <button class="cta-btn cta-primary" id="cta-consult" onclick="window.location.href='mailto:your@email.com?subject=Data Governance Consultation'">Book a consultation</button>
+  </div>
+</div>
+
+<script>
+let lang = 'en';
+let currentQ = 0;
+let answers = {};
+let radarChartInstance = null;
+
+const t = {
+  en: {
+    badge: 'NDI Data Maturity Assessment',
+    introTitle: "How mature is your organization's data governance?",
+    introSub: "This assessment evaluates your organization across 8 key data management domains aligned with SDAIA's National Data Index framework. Takes approximately 8–10 minutes.",
+    startBtn: 'Begin Assessment',
+    back: '← Back', next: 'Next →', finish: 'View Results',
+    progLabel: s => 'Section: ' + s,
+    progCount: (c, t) => c + ' of ' + t,
+    radarTitle: 'Domain scores', barTitle: 'Score by domain', recTitle: 'Priority recommendations',
+    restart: 'Retake assessment', consult: 'Book a consultation',
+    levels: ['Initial','Developing','Defined','Managed','Optimizing'],
+    levelDesc: [
+      'Your organization is at the beginning of its data governance journey. Data is managed in silos with no formal policies.',
+      'Basic data governance processes are emerging but are inconsistent and not yet standardized across the organization.',
+      'Data governance processes are defined and documented with a consistent approach across most departments.',
+      'Data governance is actively measured and controlled. Decisions are consistently data-driven.',
+      'Data governance is continuously improved and optimized. Your organization is a benchmark for the industry.'
+    ],
+    optionLabels: ['Not implemented','Initial / Ad hoc','Developing','Defined','Optimized'],
+    qLabel: 'Question', ofLabel: 'of',
+    highPri: 'High priority', medPri: 'Medium priority', lowPri: 'Quick win',
+    overallScore: 'Overall Score', maturityLevel: 'Maturity Level',
+    answered: 'Questions Answered', avgScore: 'Avg Domain Score'
+  },
+  ar: {
+    badge: 'تقييم نضج البيانات — المؤشر الوطني للبيانات',
+    introTitle: 'ما مستوى نضج حوكمة البيانات في مؤسستك؟',
+    introSub: 'يقيّم هذا الاستبيان مؤسستك عبر 8 محاور رئيسية لإدارة البيانات وفقاً لإطار المؤشر الوطني للبيانات الصادر عن سدايا. يستغرق الإكمال من 8 إلى 10 دقائق.',
+    startBtn: 'ابدأ التقييم',
+    back: 'رجوع →', next: '← التالي', finish: 'عرض النتائج',
+    progLabel: s => 'القسم: ' + s,
+    progCount: (c, t) => c + ' من ' + t,
+    radarTitle: 'نتائج المحاور', barTitle: 'الدرجات حسب المحور', recTitle: 'التوصيات ذات الأولوية',
+    restart: 'إعادة التقييم', consult: 'احجز استشارة',
+    levels: ['ابتدائي','ناشئ','محدد','مُدار','مُحسَّن'],
+    levelDesc: [
+      'مؤسستك في بداية رحلة حوكمة البيانات. تُدار البيانات بصورة منعزلة دون سياسات رسمية.',
+      'تبدأ عمليات حوكمة البيانات الأساسية بالظهور، لكنها غير متسقة وغير موحدة.',
+      'عمليات حوكمة البيانات محددة وموثقة مع نهج متسق في معظم الأقسام.',
+      'تُقاس حوكمة البيانات وتُراقب بفاعلية، والقرارات مبنية على البيانات باستمرار.',
+      'تُحسَّن حوكمة البيانات باستمرار، ومؤسستك مرجع في هذا المجال.'
+    ],
+    optionLabels: ['غير مطبق','ابتدائي / غير رسمي','ناشئ','محدد','مُحسَّن'],
+    qLabel: 'السؤال', ofLabel: 'من',
+    highPri: 'أولوية عالية', medPri: 'أولوية متوسطة', lowPri: 'إنجاز سريع',
+    overallScore: 'الدرجة الكلية', maturityLevel: 'مستوى النضج',
+    answered: 'أسئلة مُجابة', avgScore: 'متوسط درجات المحاور'
+  }
+};
+
+const domains = [
+  { en: 'Data Governance',   ar: 'حوكمة البيانات',    color: '#1a4fa0' },
+  { en: 'Data Architecture', ar: 'هندسة البيانات',    color: '#0e8c6a' },
+  { en: 'Data Modeling',     ar: 'نمذجة البيانات',    color: '#7c3aed' },
+  { en: 'Data Storage',      ar: 'تخزين البيانات',   color: '#b45309' },
+  { en: 'Data Security',     ar: 'أمن البيانات',      color: '#be123c' },
+  { en: 'Data Quality',      ar: 'جودة البيانات',     color: '#0369a1' },
+  { en: 'Data Integration',  ar: 'تكامل البيانات',   color: '#047857' },
+  { en: 'Data Analytics',    ar: 'تحليل البيانات',   color: '#7c2d12' },
+];
+
+const questions = [
+  { domain:0, en:'Does your organization have a formally documented data governance framework approved by leadership?', ar:'هل تمتلك مؤسستك إطاراً موثقاً رسمياً لحوكمة البيانات معتمداً من القيادة؟' },
+  { domain:0, en:'Are data ownership roles and responsibilities clearly defined and assigned across departments?', ar:'هل أدوار ومسؤوليات ملكية البيانات محددة وموزعة بوضوح عبر الأقسام؟' },
+  { domain:0, en:'Does your organization have a Data Governance Committee or equivalent governance body?', ar:'هل تمتلك مؤسستك لجنة حوكمة بيانات أو هيئة حوكمة مماثلة؟' },
+  { domain:0, en:'Are data policies and standards regularly reviewed and updated?', ar:'هل يتم مراجعة سياسات ومعايير البيانات وتحديثها بانتظام؟' },
+  { domain:0, en:'Is there a formal process for managing data-related issues and escalations?', ar:'هل يوجد إجراء رسمي لإدارة المشكلات المتعلقة بالبيانات والتصعيد؟' },
+  { domain:1, en:'Does your organization have an enterprise data architecture blueprint aligned with business strategy?', ar:'هل تمتلك مؤسستك مخططاً لهندسة البيانات المؤسسية متوافقاً مع استراتيجية الأعمال؟' },
+  { domain:1, en:'Are data flows and integrations between systems documented and maintained?', ar:'هل تدفقات البيانات والتكاملات بين الأنظمة موثقة ومحدثة؟' },
+  { domain:1, en:'Does your organization follow established standards for data architecture design?', ar:'هل تتبع مؤسستك معايير محددة لتصميم هندسة البيانات؟' },
+  { domain:1, en:'Is there a process for evaluating and approving changes to the data architecture?', ar:'هل يوجد إجراء لتقييم التغييرات على هندسة البيانات والموافقة عليها؟' },
+  { domain:1, en:'Does your data architecture support scalability and future growth requirements?', ar:'هل تدعم هندسة بياناتك قابلية التوسع ومتطلبات النمو المستقبلية؟' },
+  { domain:2, en:'Does your organization maintain a formal enterprise data model?', ar:'هل تحتفظ مؤسستك بنموذج بيانات مؤسسي رسمي؟' },
+  { domain:2, en:'Are data modeling standards and naming conventions defined and enforced?', ar:'هل معايير نمذجة البيانات واصطلاحات التسمية محددة ومطبقة؟' },
+  { domain:2, en:'Is there a business glossary with agreed definitions for key data terms?', ar:'هل يوجد قاموس أعمال يتضمن تعريفات متفق عليها للمصطلحات الرئيسية للبيانات؟' },
+  { domain:2, en:'Are data models version-controlled and change-managed?', ar:'هل نماذج البيانات خاضعة للتحكم في الإصدارات وإدارة التغييرات؟' },
+  { domain:2, en:'Do data models align with regulatory and compliance requirements (e.g., PDPL)?', ar:'هل تتوافق نماذج البيانات مع المتطلبات التنظيمية والامتثالية (مثل نظام حماية البيانات الشخصية)؟' },
+  { domain:3, en:'Does your organization have a defined data storage strategy covering all data types?', ar:'هل تمتلك مؤسستك استراتيجية محددة لتخزين البيانات تشمل جميع أنواعها؟' },
+  { domain:3, en:'Are data retention and archival policies formally defined and implemented?', ar:'هل سياسات الاحتفاظ بالبيانات وأرشفتها محددة رسمياً ومطبقة؟' },
+  { domain:3, en:'Are backup and disaster recovery processes regularly tested?', ar:'هل يتم اختبار عمليات النسخ الاحتياطي والتعافي من الكوارث بانتظام؟' },
+  { domain:3, en:'Is storage infrastructure monitored for performance and capacity?', ar:'هل تتم مراقبة البنية التحتية للتخزين من حيث الأداء والسعة؟' },
+  { domain:3, en:'Does your organization leverage cloud storage solutions effectively?', ar:'هل تستخدم مؤسستك حلول التخزين السحابي بفاعلية؟' },
+  { domain:4, en:'Is sensitive and personal data classified and protected according to a defined classification policy?', ar:'هل البيانات الحساسة والشخصية مصنفة ومحمية وفق سياسة تصنيف محددة؟' },
+  { domain:4, en:'Are access controls to data systems based on role-based access control (RBAC)?', ar:'هل ضوابط الوصول إلى أنظمة البيانات مبنية على التحكم في الوصول حسب الأدوار (RBAC)؟' },
+  { domain:4, en:'Does your organization comply with the Saudi Personal Data Protection Law (PDPL)?', ar:'هل تمتثل مؤسستك لنظام حماية البيانات الشخصية السعودي؟' },
+  { domain:4, en:'Are data security incidents reported, tracked and resolved within defined SLAs?', ar:'هل يتم الإبلاغ عن حوادث أمن البيانات وتتبعها وحلها ضمن مستويات الخدمة المحددة؟' },
+  { domain:4, en:'Is data encryption applied to data at rest and in transit?', ar:'هل يتم تطبيق تشفير البيانات على البيانات المخزنة وأثناء النقل؟' },
+  { domain:5, en:'Does your organization have a formal data quality management program?', ar:'هل تمتلك مؤسستك برنامجاً رسمياً لإدارة جودة البيانات؟' },
+  { domain:5, en:'Are data quality dimensions (accuracy, completeness, consistency, timeliness) measured regularly?', ar:'هل تُقاس أبعاد جودة البيانات (الدقة، الاكتمال، الاتساق، التوقيت) بانتظام؟' },
+  { domain:5, en:'Are data quality issues tracked, assigned and resolved through a formal process?', ar:'هل يتم تتبع مشكلات جودة البيانات وتعيينها وحلها من خلال إجراء رسمي؟' },
+  { domain:5, en:'Are data quality metrics reported to management as part of governance reporting?', ar:'هل تُرفع مقاييس جودة البيانات للإدارة كجزء من تقارير الحوكمة؟' },
+  { domain:5, en:'Are automated data quality checks implemented in data pipelines?', ar:'هل تُطبق فحوصات جودة البيانات الآلية في مسارات البيانات؟' },
+  { domain:6, en:'Does your organization have a defined data integration strategy and architecture?', ar:'هل تمتلك مؤسستك استراتيجية وهندسة محددة لتكامل البيانات؟' },
+  { domain:6, en:'Are APIs and data exchange standards defined and enforced across systems?', ar:'هل واجهات برمجة التطبيقات ومعايير تبادل البيانات محددة ومطبقة عبر الأنظمة؟' },
+  { domain:6, en:'Is data lineage tracked and documented across all major data pipelines?', ar:'هل يتم تتبع سلسلة البيانات وتوثيقها عبر جميع مسارات البيانات الرئيسية؟' },
+  { domain:6, en:'Are data integration processes monitored for errors and performance?', ar:'هل تتم مراقبة عمليات تكامل البيانات للكشف عن الأخطاء وقياس الأداء؟' },
+  { domain:6, en:'Does your organization have a master data management (MDM) solution in place?', ar:'هل تمتلك مؤسستك حلاً لإدارة البيانات الرئيسية (MDM)؟' },
+  { domain:7, en:'Does your organization have a self-service analytics capability for business users?', ar:'هل تمتلك مؤسستك إمكانية تحليل البيانات الذاتي لمستخدمي الأعمال؟' },
+  { domain:7, en:'Are decisions at the leadership level consistently driven by data and analytics?', ar:'هل القرارات على مستوى القيادة مدفوعة باستمرار بالبيانات والتحليلات؟' },
+  { domain:7, en:'Does your organization have defined KPIs and dashboards aligned to strategic objectives?', ar:'هل تمتلك مؤسستك مؤشرات أداء رئيسية ولوحات تحكم محددة ومتوافقة مع الأهداف الاستراتيجية؟' },
+  { domain:7, en:'Is there a data literacy program to upskill employees in data usage?', ar:'هل يوجد برنامج لمحو أمية البيانات لتطوير مهارات الموظفين في استخدام البيانات؟' },
+  { domain:7, en:'Does your organization leverage advanced analytics or AI/ML capabilities?', ar:'هل تستخدم مؤسستك تحليلات متقدمة أو قدرات الذكاء الاصطناعي؟' },
+];
+
+function show(id) {
+  ['screen-intro','screen-survey','screen-results'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&l==='en')||(i===1&&l==='ar')));
+  document.body.classList.toggle('rtl', l==='ar');
+  const active = ['screen-intro','screen-survey','screen-results'].find(s => !document.getElementById(s).classList.contains('hidden'));
+  if (active === 'screen-intro') renderIntro();
+  if (active === 'screen-survey') renderQuestion();
+  if (active === 'screen-results') renderResults();
+}
+
+function renderIntro() {
+  const tx = t[lang];
+  document.getElementById('intro-badge').textContent = tx.badge;
+  document.getElementById('intro-title').textContent = tx.introTitle;
+  document.getElementById('intro-sub').textContent = tx.introSub;
+  document.getElementById('start-btn').textContent = tx.startBtn;
+  document.getElementById('domains-grid').innerHTML = domains.map((d,i) => {
+    const count = questions.filter(q => q.domain === i).length;
+    return `<div class="domain-chip"><strong style="color:${d.color}">${lang==='en'?d.en:d.ar}</strong>${count} ${lang==='en'?'questions':'أسئلة'}</div>`;
+  }).join('');
+}
+
+function startSurvey() {
+  currentQ = 0; answers = {};
+  show('screen-survey');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = questions[currentQ];
+  const tx = t[lang];
+  const total = questions.length;
+  const pct = Math.round((currentQ / total) * 100);
+  const domain = domains[q.domain];
+  const selected = answers[currentQ];
+
+  document.getElementById('prog-section').textContent = tx.progLabel(lang==='en'?domain.en:domain.ar);
+  document.getElementById('prog-count').textContent = tx.progCount(currentQ+1, total);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('btn-next').textContent = currentQ === total-1 ? tx.finish : tx.next;
+  document.getElementById('btn-back').disabled = currentQ === 0;
+  document.getElementById('btn-next').disabled = selected === undefined;
+
+  document.getElementById('question-area').innerHTML = `
+    <div class="section-label">${lang==='en'?domain.en:domain.ar}</div>
+    <div class="question-card">
+      <div class="q-number">${tx.qLabel} ${currentQ+1} ${tx.ofLabel} ${total}</div>
+      <div class="q-text">${lang==='en'?q.en:q.ar}</div>
+      <div class="options-list">
+        ${tx.optionLabels.map((label,i) => `
+          <button class="option-btn ${selected===i?'selected':''}" onclick="selectAnswer(${i})">
+            <span class="option-dot"></span>
+            <span>
+              <span class="option-label">${label}</span>
+              <span class="option-score">${lang==='en'?'Maturity level':'مستوى النضج'} ${i+1}/5</span>
+            </span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+}
+
+function selectAnswer(val) {
+  answers[currentQ] = val;
+  document.getElementById('btn-next').disabled = false;
+  renderQuestion();
+}
+
+function goNext() {
+  if (currentQ < questions.length-1) { currentQ++; renderQuestion(); }
+  else showResults();
+}
+
+function goBack() {
+  if (currentQ > 0) { currentQ--; renderQuestion(); }
+}
+
+function getScores() {
+  const domainScores = domains.map((_,di) => {
+    const qs = questions.map((q,i) => ({...q,idx:i})).filter(q => q.domain===di);
+    const total = qs.reduce((s,q) => s+(answers[q.idx]!==undefined?answers[q.idx]:0),0);
+    return Math.round((total/(qs.length*4))*100);
+  });
+  return { domainScores, overall: Math.round(domainScores.reduce((a,b)=>a+b,0)/domainScores.length) };
+}
+
+function getLevel(score) {
+  if (score<20) return 0; if (score<40) return 1; if (score<60) return 2; if (score<80) return 3; return 4;
+}
+
+function showResults() {
+  show('screen-results');
+  renderResults();
+}
+
+function renderResults() {
+  const tx = t[lang];
+  const { domainScores, overall } = getScores();
+  const level = getLevel(overall);
+  const colors   = ['#be123c','#b45309','#0369a1','#047857','#1a4fa0'];
+  const bgColors = ['#fee2e2','#fef3c7','#e0f2fe','#d1fae5','#e8eef8'];
+
+  const badge = document.getElementById('res-badge');
+  badge.textContent = tx.levels[level];
+  badge.style.background = bgColors[level];
+  badge.style.color = colors[level];
+
+  document.getElementById('res-score').textContent = overall + '%';
+  document.getElementById('res-score').style.color = colors[level];
+  document.getElementById('res-title').textContent = tx.levels[level];
+  document.getElementById('res-sub').textContent = tx.levelDesc[level];
+
+  const answered = Object.keys(answers).length;
+  const avg = (overall/25).toFixed(1);
+  document.getElementById('metrics-grid').innerHTML = `
+    <div class="metric-card"><div class="metric-val">${overall}%</div><div class="metric-lbl">${tx.overallScore}</div></div>
+    <div class="metric-card"><div class="metric-val">${tx.levels[level]}</div><div class="metric-lbl">${tx.maturityLevel}</div></div>
+    <div class="metric-card"><div class="metric-val">${answered}/${questions.length}</div><div class="metric-lbl">${tx.answered}</div></div>
+    <div class="metric-card"><div class="metric-val">${avg}</div><div class="metric-lbl">${tx.avgScore}</div></div>`;
+
+  document.getElementById('radar-title').textContent = tx.radarTitle;
+  document.getElementById('bar-title').textContent = tx.barTitle;
+
+  if (radarChartInstance) { radarChartInstance.destroy(); radarChartInstance = null; }
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+  const labelColor = isDark ? '#aaa' : '#555';
+
+  radarChartInstance = new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {
+      labels: domains.map(d => lang==='en'?d.en:d.ar),
+      datasets: [{
+        label: lang==='en'?'Maturity Score':'درجة النضج',
+        data: domainScores,
+        backgroundColor: 'rgba(26,79,160,0.15)',
+        borderColor: '#1a4fa0',
+        borderWidth: 2,
+        pointBackgroundColor: '#1a4fa0',
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { r: { min:0, max:100, ticks:{ stepSize:25, color:labelColor, font:{size:10} }, grid:{ color:gridColor }, angleLines:{ color:gridColor }, pointLabels:{ color:labelColor, font:{size:11} } } },
+      plugins: { legend:{ display:false } }
+    }
+  });
+
+  const sorted = domains.map((d,i) => ({d, score:domainScores[i]})).sort((a,b) => a.score-b.score);
+  document.getElementById('domain-bars').innerHTML = sorted.map(({d,score}) => {
+    const c = score<40?'#be123c':score<60?'#b45309':score<80?'#0369a1':'#047857';
+    return `<div class="domain-bar-row">
+      <div class="domain-bar-label">${lang==='en'?d.en:d.ar}</div>
+      <div class="domain-bar-track"><div class="domain-bar-fill" style="width:${score}%;background:${c}"></div></div>
+      <div class="domain-bar-pct">${score}%</div>
+    </div>`;
+  }).join('');
+
+  const weakest = sorted.slice(0,3);
+  const recTexts = {
+    en: [
+      `Strengthen <strong>${weakest[0]?.d.en}</strong> — currently your weakest domain at ${weakest[0]?.score}%. Focus on establishing foundational policies and assigning clear ownership.`,
+      `Improve <strong>${weakest[1]?.d.en}</strong> (${weakest[1]?.score}%) by standardizing processes and implementing monitoring mechanisms.`,
+      `<strong>${weakest[2]?.d.en}</strong> (${weakest[2]?.score}%) shows progress — consolidate existing practices and document them formally.`
+    ],
+    ar: [
+      `تعزيز محور <strong>${weakest[0]?.d.ar}</strong> — أضعف المحاور حالياً بنسبة ${weakest[0]?.score}%. ركّز على وضع السياسات الأساسية وتحديد المسؤوليات.`,
+      `تحسين <strong>${weakest[1]?.d.ar}</strong> (${weakest[1]?.score}%) من خلال توحيد العمليات وتطبيق آليات المراقبة.`,
+      `<strong>${weakest[2]?.d.ar}</strong> (${weakest[2]?.score}%) يُظهر تقدماً — وحّد الممارسات الحالية ووثّقها رسمياً.`
+    ]
+  };
+  const pris = ['high','med','low'];
+  const icons = ['!','~','✓'];
+  const priLabels = lang==='en'?[tx.highPri,tx.medPri,tx.lowPri]:[tx.highPri,tx.medPri,tx.lowPri];
+
+  document.getElementById('rec-section').innerHTML = `
+    <div class="rec-title">${tx.recTitle}</div>
+    ${[0,1,2].map(i=>`
+      <div class="rec-item">
+        <div class="rec-icon ${pris[i]}">${icons[i]}</div>
+        <div class="rec-text"><strong>${priLabels[i]}:</strong> ${recTexts[lang][i]}</div>
+      </div>`).join('')}`;
+
+  document.getElementById('cta-restart').textContent = tx.restart;
+  document.getElementById('cta-consult').textContent = tx.consult;
+}
+
+function restartSurvey() {
+  answers = {}; currentQ = 0;
+  if (radarChartInstance) { radarChartInstance.destroy(); radarChartInstance = null; }
+  show('screen-intro');
+  renderIntro();
+}
+
+renderIntro();
+</script>
+</body>
+</html>
